@@ -34,7 +34,7 @@ const musicPlayerSection = document.querySelector('.music-player-section');
 // On innitialiseun compteur de click
 let clickCount = 1;
 
-// Au click sur la nav du bas 
+// Au click sur la nav du bas clickCount = 2 mais reset toutes les 250 milisecondes 
 musicPlayerSection.addEventListener('click', () => {
     if (clickCount >= 2) {
         musicPlayerSection.classList.add('active');
@@ -96,6 +96,9 @@ const coverImage = document.querySelector('.cover');
 const currentMusicTime = document.querySelector('.current-time');
 const musicDuration = document.querySelector('.duration');
 
+const queue = [...document.querySelectorAll('.queue')];
+console.log(queue);
+
 // select all button here
 
 const forwardBtn = document.querySelector('i.fa-forward');
@@ -109,6 +112,7 @@ const volumeSlider = document.querySelector('.volume-slider');
 //  playBtn click event
 
 playBtn.addEventListener('click', () => {
+    music.play();
     playBtn.classList.remove('active');
     pauseBtn.classList.add('active');
 });
@@ -117,6 +121,7 @@ playBtn.addEventListener('click', () => {
 //  pauseBtn click event
 
 pauseBtn.addEventListener('click', () => {
+    music.pause();
     pauseBtn.classList.remove('active');
     playBtn.classList.add('active');
 });
@@ -129,7 +134,6 @@ const setMusic = (i) => {
     let song = songs[i];
     
     currentMusic = i;
-
     // On insere dynamiquement les informations d'une chanson dnas l'HTML
     // Balise audio HTML = à la source d'une music de l'objet dans data.js
     music.src = song.path;
@@ -141,23 +145,28 @@ const setMusic = (i) => {
     setInterval(() => {
         // Le maximum de la barre de music est la durée de la chanson
         seekBar.max = music.duration;
-        console.log(music.duration);
+        // console.log(music.duration);
         // On insere la durée de la music avec le bon format dans le HTML
         musicDuration.innerHTML = formatTime(music.duration);
     }, 300);
+    // Voir l.181
     currentMusicTime.innerHTML = '00 : 00';
+    // Pour chaque indice de chanson on enleve la classe active
+    queue.forEach (item => item.classList.remove('active'));
+    // Et pour la div de la chanson en cour on lui ajoute la class active pour faire apparaître l'icone pause
+    queue[currentMusic].classList.add('active');
 }
 
 setMusic(0);
 
 //  format duration in 00 : 00 format
-
 const formatTime = (time) => {
+    // Ex 189.387725 / 60 = 3.1564620833
     let min = Math.floor(time / 60);
     if (min < 10) {
         min = '0' + min;
     }
-
+// Ex 189 modulo 60 = 9 car 60 * 3 = 180 il reste donc 9
     let sec = Math.floor(time % 60);
     if (sec < 10) {
         sec = '0'+ sec;
@@ -165,3 +174,96 @@ const formatTime = (time) => {
     return `${min} : ${sec}`;
 }
 
+// seekbar event
+
+// Toutes les 500 milliseconde tu met la barre de music à jour
+setInterval(() => {
+    // La barre de music est égale au temps actuelle de la musique 
+    seekBar.value = music.currentTime;
+    // console.log(music.duration);
+    // On insere le temps actuelle qu'on a formater dans le HTML
+    currentMusicTime.innerHTML = formatTime(music.currentTime);
+
+    // Si le temps de la musique actuelle est égale à la value de la barre de music qui est à la fin
+    if (Math.floor(music.currentTime) == Math.floor(seekBar.max)) {
+        // console.log(Math.floor(music.currentTime) == Math.floor(seekBar.value));
+        // Alors si le repeatBtn à la classe active on relance la musique acuelle (voir L.226)
+        if (repeatBtn.className.includes('active')) {
+           setMusic(currentMusic);
+           playBtn.click();
+        } else {
+            // Sinon on passe à la musique suivante (voir L.200)
+            forwardBtn.click();
+        }
+    }
+}, 500);
+
+// Au changement sur la  barre de music le temps actuelle de la musique est égale à la value de la barre de musique qu'on vient de faire changer
+seekBar.addEventListener('change', () => {
+music.currentTime = seekBar.value
+})
+
+// forward btn (passer à la future music)
+forwardBtn.addEventListener('click', () => {
+    // Si l'indice de la musique actuelle est inférieur au nombre de musique alors la playlist de musique de 0
+   if (currentMusic >= songs.length - 1) {
+       currentMusic = 0;
+   } else {
+    //    Sinon on passe à la musique suivante
+       currentMusic++;
+   }
+    // On insére l'indice de la prochaine musique dnas le HTML grâce à cette fonction
+   setMusic(currentMusic);
+//    Et on lance la musique
+   playBtn.click()
+})
+
+// backward btn (revenir à l'ancienne music ou la relancer)
+backWardBtn.addEventListener('click', () => {
+    if (currentMusic <= 0) {
+        currentMusic = songs.length - 1; 
+    } else {
+        currentMusic--;
+    }
+    setMusic(currentMusic);
+    playBtn.click();
+})
+
+// repeat btn
+repeatBtn.addEventListener('click', () => {
+    repeatBtn.classList.toggle('active');
+    // setMusic(currentMusic);
+    // playBtn.click();
+})
+
+// volume section
+
+// Au click sur le button volume on affiche l'input volume (de type "range") et on change la couleur et l'opacité du button volume
+volumeBtn.addEventListener('click', () => {
+    volumeBtn.classList.toggle('active');
+    volumeSlider.classList.toggle('active');
+})
+
+// Et au changement de value sur l'input, le volume de la chanson est égale à la valeur de l'input volume
+volumeSlider.addEventListener('input', () => {
+    music.volume = volumeSlider.value;
+})
+// i = L'indice de l'élément du tableau en cours de traitement. (modzilla)
+// Pour chaques chansons (div) 
+queue.forEach((item, i) => {
+    // Au click sur une d'elle
+    item.addEventListener('click', () => {
+        // Lancement de la chanson correspondant à l'indice de la div dans le querySelectorAll
+        setMusic(i);
+        playBtn.click();
+    })
+})
+
+// A finir ajoutere l'option de mettre pause et de lancer la chanson directement via la playlist
+
+// const btnPausePlaylist = document.querySelector('.queue.active i.fa-pause');
+// console.log(btnPausePlaylist);
+
+// btnPausePlaylist.addEventListener('click', () => {
+//     // music.pause()
+// })
